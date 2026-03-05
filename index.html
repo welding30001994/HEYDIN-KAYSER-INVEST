@@ -421,7 +421,7 @@
         
         .results-table {
             width: 100%;
-            min-width: 600px;
+            min-width: 800px;
             border-collapse: collapse;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255, 215, 0, 0.3);
@@ -558,6 +558,55 @@
                 transform: scale(0.98);
             }
         }
+
+        /* Estilos para PDF - Exactamente igual al HTML */
+        .pdf-report {
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2f);
+            color: #e0e0ff;
+            font-family: 'Rajdhani', sans-serif;
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .pdf-report .gold-text {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        
+        .pdf-report .highlight-green {
+            color: #00ff9d;
+            font-weight: bold;
+        }
+        
+        .pdf-report .info-box-pdf {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .pdf-report table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .pdf-report th {
+            background: linear-gradient(45deg, rgba(255, 215, 0, 0.2), rgba(157, 0, 255, 0.2));
+            padding: 15px;
+            color: #ffd700;
+            border-bottom: 2px solid #ffd700;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .pdf-report td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -678,6 +727,7 @@
 
     <!-- Script para generar PDF (html2pdf) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <script>
         let inversionesGuardadas = [];
@@ -730,17 +780,12 @@
         
         // Función para calcular rendimientos con fechas correctas
         function calcularRendimientos(inversion, porcentaje, fechaInicio) {
-            const diasLaborales = 20; // 4 semanas * 5 días
+            const diasLaborales = 20;
             const resultados = [];
             let capitalActual = parseFloat(inversion);
             const fecha = new Date(fechaInicio);
-            const fechaActual = new Date();
-            
-            console.log("Fecha de inicio recibida:", fechaInicio);
-            console.log("Fecha objeto:", fecha);
             
             for (let i = 0; i < diasLaborales; i++) {
-                // Solo contar días de lunes a viernes
                 while (fecha.getDay() === 0 || fecha.getDay() === 6) {
                     fecha.setDate(fecha.getDate() + 1);
                 }
@@ -748,7 +793,6 @@
                 const rendimientoDiario = capitalActual * (porcentaje / 100);
                 capitalActual += rendimientoDiario;
                 
-                // Crear objeto con TODOS los detalles de fecha
                 const fechaObj = new Date(fecha);
                 
                 resultados.push({
@@ -793,7 +837,6 @@
             
             const resultados = calcularRendimientos(inversion, porcentaje, fechaInicio);
             
-            // Calcular fecha final (último día de inversión)
             const fechaFinal = new Date(resultados[resultados.length-1].fechaObj);
             
             const inversionCompleta = {
@@ -813,17 +856,14 @@
             inversionesGuardadas.push(inversionCompleta);
             localStorage.setItem('inversiones', JSON.stringify(inversionesGuardadas));
             
-            // Mostrar vista previa
             mostrarVistaPrevia(inversionCompleta);
             
-            // Limpiar campos
             document.getElementById('nombre').value = '';
             document.getElementById('apellido').value = '';
             document.getElementById('inversion').value = '';
             document.getElementById('porcentaje').value = '';
             document.getElementById('fechaInicio').value = new Date().toISOString().split('T')[0];
             
-            // Animación de éxito
             alert('✅ INVERSIÓN GUARDADA CON ÉXITO');
         }
         
@@ -860,6 +900,7 @@
                             <tr>
                                 <th>DÍA</th>
                                 <th>FECHA COMPLETA</th>
+                                <th>DÍA SEMANA</th>
                                 <th>CAPITAL INICIAL</th>
                                 <th>RENDIMIENTO</th>
                                 <th>CAPITAL FINAL</th>
@@ -873,6 +914,7 @@
                     <tr>
                         <td class="gold-highlight">#${r.dia}</td>
                         <td>${r.fechaCompleta}</td>
+                        <td>${r.diaSemana}</td>
                         <td>$${r.capitalInicial.toFixed(2)}</td>
                         <td class="highlight">+$${r.rendimiento.toFixed(2)}</td>
                         <td class="gold-highlight">$${r.capitalFinal.toFixed(2)}</td>
@@ -916,7 +958,6 @@
             
             selectorDiv.style.display = 'block';
             
-            // Limpiar y llenar el selector
             select.innerHTML = '<option value="">-- Seleccione un inversionista --</option>';
             inversionesGuardadas.forEach((inv, index) => {
                 const option = document.createElement('option');
@@ -925,7 +966,6 @@
                 select.appendChild(option);
             });
             
-            // Seleccionar el primer inversionista por defecto
             if (inversionesGuardadas.length > 0) {
                 select.selectedIndex = 1;
                 mostrarInversionistaSeleccionado();
@@ -1059,148 +1099,236 @@
             resultadoDiv.innerHTML = html;
         }
         
-        // Función para generar PDF/HTML completo con TODOS los detalles
-        function generarReporteCompleto(inversion) {
+        // Función para generar reporte PDF con EXACTAMENTE el mismo estilo que el HTML
+        function generarReportePDFCompleto(inversion) {
             const beneficioTotal = inversion.resultados[inversion.resultados.length-1].capitalFinal - inversion.inversion;
             const roi = ((beneficioTotal/inversion.inversion)*100).toFixed(2);
             
-            // Crear elemento con TODO el contenido
-            const element = document.createElement('div');
-            element.style.background = 'linear-gradient(135deg, #0a0a0f, #1a1a2f)';
-            element.style.color = '#e0e0ff';
-            element.style.fontFamily = 'Rajdhani, sans-serif';
-            element.style.padding = '30px';
-            element.style.maxWidth = '1400px';
-            element.style.margin = '0 auto';
-            
-            // Generar filas de la tabla completa
-            let tablaFilas = '';
+            // Generar filas de la tabla
+            let filasTabla = '';
             inversion.resultados.forEach(r => {
-                tablaFilas += `
+                filasTabla += `
                     <tr style="border-bottom: 1px solid rgba(255,215,0,0.2);">
-                        <td style="padding: 12px; text-align: center; color: #ffd700; font-weight: bold;">#${r.dia}</td>
-                        <td style="padding: 12px; text-align: center;">${r.fechaCompleta}</td>
-                        <td style="padding: 12px; text-align: center;">${r.diaSemana}</td>
-                        <td style="padding: 12px; text-align: center;">${r.fechaCorta}</td>
-                        <td style="padding: 12px; text-align: center;">$${r.capitalInicial.toFixed(2)}</td>
-                        <td style="padding: 12px; text-align: center; color: #00ff9d; font-weight: bold;">+$${r.rendimiento.toFixed(2)}</td>
-                        <td style="padding: 12px; text-align: center; color: #ffd700; font-weight: bold;">$${r.capitalFinal.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: center; color: #ffd700; font-weight: bold;">#${r.dia}</td>
+                        <td style="padding: 10px; text-align: center; color: #e0e0ff;">${r.fechaCompleta}</td>
+                        <td style="padding: 10px; text-align: center; color: #ffd700;">${r.diaSemana}</td>
+                        <td style="padding: 10px; text-align: center; color: #ffd700;">$${r.capitalInicial.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: center; color: #00ff9d; font-weight: bold;">+$${r.rendimiento.toFixed(2)}</td>
+                        <td style="padding: 10px; text-align: center; color: #ffd700; font-weight: bold;">$${r.capitalFinal.toFixed(2)}</td>
                     </tr>
                 `;
             });
             
-            // HTML completo del reporte
-            element.innerHTML = `
-                <div style="border: 3px solid #ffd700; border-radius: 30px; padding: 30px; background: rgba(20,20,30,0.95);">
-                    <!-- HEADER -->
-                    <div style="text-align: center; margin-bottom: 30px; padding: 20px; border-bottom: 2px solid #ffd700;">
-                        <h1 style="font-family: Orbitron, sans-serif; font-size: 36px; background: linear-gradient(45deg, #ffd700, #00f3ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px;">⚡ HEYDIN KAYSER INVEST ⚡</h1>
-                        <h2 style="color: #ffd700; font-size: 24px;">REPORTE DE INVERSIÓN CUÁNTICO</h2>
-                        <p style="color: #a0a0ff; margin-top: 10px;">Generado: ${new Date().toLocaleString()}</p>
-                    </div>
-                    
-                    <!-- INFORMACIÓN DEL INVERSIONISTA -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
-                        <div style="background: rgba(255,215,0,0.1); border: 1px solid #ffd700; border-radius: 15px; padding: 20px; text-align: center;">
-                            <div style="color: #a0a0ff; margin-bottom: 10px; font-size: 14px;">INVERSIONISTA</div>
-                            <div style="color: #ffd700; font-size: 20px; font-weight: bold;">${inversion.nombre} ${inversion.apellido}</div>
-                        </div>
-                        <div style="background: rgba(255,215,0,0.1); border: 1px solid #ffd700; border-radius: 15px; padding: 20px; text-align: center;">
-                            <div style="color: #a0a0ff; margin-bottom: 10px; font-size: 14px;">INVERSIÓN INICIAL</div>
-                            <div style="color: #ffd700; font-size: 24px; font-weight: bold;">$${inversion.inversion.toFixed(2)}</div>
-                        </div>
-                        <div style="background: rgba(255,215,0,0.1); border: 1px solid #ffd700; border-radius: 15px; padding: 20px; text-align: center;">
-                            <div style="color: #a0a0ff; margin-bottom: 10px; font-size: 14px;">RENDIMIENTO DIARIO</div>
-                            <div style="color: #ffd700; font-size: 24px; font-weight: bold;">${inversion.porcentaje}%</div>
-                        </div>
-                        <div style="background: rgba(255,215,0,0.1); border: 1px solid #ffd700; border-radius: 15px; padding: 20px; text-align: center;">
-                            <div style="color: #a0a0ff; margin-bottom: 10px; font-size: 14px;">DÍAS LABORALES</div>
-                            <div style="color: #ffd700; font-size: 24px; font-weight: bold;">20</div>
-                        </div>
-                    </div>
-                    
-                    <!-- FECHAS DEL PERÍODO -->
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 30px;">
-                        <div style="background: rgba(255,215,0,0.1); border: 1px solid #ffd700; border-radius: 15px; padding: 15px; text-align: center;">
-                            <div style="color: #a0a0ff;">FECHA DE INICIO</div>
-                            <div style="color: #ffd700; font-size: 18px;">${inversion.fechaInicio} (${inversion.resultados[0].diaSemana})</div>
-                        </div>
-                        <div style="background: rgba(255,215,0,0.1); border: 1px solid #ffd700; border-radius: 15px; padding: 15px; text-align: center;">
-                            <div style="color: #a0a0ff;">FECHA FINAL</div>
-                            <div style="color: #ffd700; font-size: 18px;">${inversion.fechaFinal} (${inversion.resultados[inversion.resultados.length-1].diaSemana})</div>
-                        </div>
-                    </div>
-                    
-                    <!-- TABLA COMPLETA DE RENDIMIENTOS -->
-                    <h3 style="color: #ffd700; text-align: center; margin: 30px 0 20px; font-size: 22px;">📊 DETALLE COMPLETO DE RENDIMIENTOS DIARIOS (20 DÍAS)</h3>
-                    
-                    <div style="overflow-x: auto; margin-bottom: 30px;">
-                        <table style="width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.3); border-radius: 15px; overflow: hidden; min-width: 1000px;">
-                            <thead>
-                                <tr style="background: linear-gradient(45deg, rgba(255,215,0,0.2), rgba(157,0,255,0.2));">
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">DÍA</th>
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">FECHA COMPLETA</th>
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">DÍA SEMANA</th>
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">FECHA CORTA</th>
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">CAPITAL INICIAL</th>
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">RENDIMIENTO</th>
-                                    <th style="padding: 15px; color: #ffd700; border-bottom: 2px solid #ffd700;">CAPITAL FINAL</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tablaFilas}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- RESUMEN FINAL COMPLETO -->
-                    <div style="background: linear-gradient(45deg, rgba(255,215,0,0.2), rgba(157,0,255,0.2)); border: 2px solid #ffd700; border-radius: 20px; padding: 30px; text-align: center; margin-top: 30px;">
-                        <h3 style="color: #ffd700; font-size: 28px; margin-bottom: 20px;">💰 RESUMEN FINAL 💰</h3>
+            // HTML completo del reporte - EXACTAMENTE IGUAL AL HTML VISUAL
+            const htmlCompleto = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>HEYDIN KAYSER INVEST - Reporte</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
                         
-                        <div style="font-size: 48px; font-weight: bold; background: linear-gradient(45deg, #ffd700, #00f3ff, #9d00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px;">
-                            $${inversion.resultados[inversion.resultados.length-1].capitalFinal.toFixed(2)}
+                        body {
+                            font-family: 'Rajdhani', sans-serif;
+                            background: linear-gradient(135deg, #0a0a0f, #1a1a2f);
+                            color: #e0e0ff;
+                            padding: 30px;
+                        }
+                        
+                        .reporte-container {
+                            max-width: 1400px;
+                            margin: 0 auto;
+                            background: rgba(20,20,30,0.95);
+                            border: 3px solid #ffd700;
+                            border-radius: 30px;
+                            padding: 30px;
+                            box-shadow: 0 0 50px rgba(255,215,0,0.3);
+                        }
+                        
+                        .gold-text { color: #ffd700; font-weight: bold; }
+                        .green-text { color: #00ff9d; font-weight: bold; }
+                        
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            padding: 20px;
+                            border-bottom: 2px solid #ffd700;
+                        }
+                        
+                        .header h1 {
+                            font-family: 'Orbitron', sans-serif;
+                            font-size: 36px;
+                            background: linear-gradient(45deg, #ffd700, #00f3ff);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: repeat(4, 1fr);
+                            gap: 20px;
+                            margin-bottom: 30px;
+                        }
+                        
+                        .info-box {
+                            background: rgba(255,215,0,0.1);
+                            border: 1px solid #ffd700;
+                            border-radius: 15px;
+                            padding: 20px;
+                            text-align: center;
+                        }
+                        
+                        .info-box .label { color: #a0a0ff; margin-bottom: 10px; }
+                        .info-box .value { color: #ffd700; font-size: 24px; font-weight: bold; }
+                        
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            background: rgba(0,0,0,0.3);
+                            border: 1px solid rgba(255,215,0,0.3);
+                            margin: 30px 0;
+                        }
+                        
+                        th {
+                            background: linear-gradient(45deg, rgba(255,215,0,0.2), rgba(157,0,255,0.2));
+                            padding: 15px;
+                            color: #ffd700;
+                            border-bottom: 2px solid #ffd700;
+                            font-family: 'Orbitron', sans-serif;
+                        }
+                        
+                        td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,215,0,0.2); }
+                        
+                        .total-box {
+                            background: linear-gradient(45deg, rgba(255,215,0,0.2), rgba(157,0,255,0.2));
+                            border: 2px solid #ffd700;
+                            border-radius: 20px;
+                            padding: 30px;
+                            text-align: center;
+                            margin-top: 30px;
+                        }
+                        
+                        .total-box .amount {
+                            font-size: 48px;
+                            font-weight: bold;
+                            background: linear-gradient(45deg, #ffd700, #00f3ff, #9d00ff);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                        }
+                        
+                        .footer {
+                            text-align: center;
+                            margin-top: 30px;
+                            color: #a0a0ff;
+                            font-size: 12px;
+                            border-top: 1px solid rgba(255,215,0,0.3);
+                            padding-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="reporte-container">
+                        <div class="header">
+                            <h1>⚡ HEYDIN KAYSER INVEST ⚡</h1>
+                            <h2 style="color: #ffd700;">REPORTE DE INVERSIÓN CUÁNTICO</h2>
+                            <p style="color: #a0a0ff;">Generado: ${new Date().toLocaleString()}</p>
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0;">
-                            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px;">
-                                <div style="color: #a0a0ff; font-size: 16px; margin-bottom: 10px;">INVERSIÓN INICIAL</div>
-                                <div style="color: #ffd700; font-size: 28px; font-weight: bold;">$${inversion.inversion.toFixed(2)}</div>
+                        <div class="info-grid">
+                            <div class="info-box">
+                                <div class="label">INVERSIONISTA</div>
+                                <div class="value">${inversion.nombre} ${inversion.apellido}</div>
                             </div>
-                            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px;">
-                                <div style="color: #a0a0ff; font-size: 16px; margin-bottom: 10px;">BENEFICIO TOTAL</div>
-                                <div style="color: #00ff9d; font-size: 28px; font-weight: bold;">+$${beneficioTotal.toFixed(2)}</div>
+                            <div class="info-box">
+                                <div class="label">INVERSIÓN INICIAL</div>
+                                <div class="value">$${inversion.inversion.toFixed(2)}</div>
                             </div>
-                            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px;">
-                                <div style="color: #a0a0ff; font-size: 16px; margin-bottom: 10px;">ROI</div>
-                                <div style="color: #ffd700; font-size: 28px; font-weight: bold;">${roi}%</div>
+                            <div class="info-box">
+                                <div class="label">RENDIMIENTO DIARIO</div>
+                                <div class="value">${inversion.porcentaje}%</div>
+                            </div>
+                            <div class="info-box">
+                                <div class="label">DÍAS LABORALES</div>
+                                <div class="value">20</div>
                             </div>
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px;">
-                            <div>
-                                <div style="color: #a0a0ff;">FECHA DE INICIO</div>
-                                <div style="color: #ffd700; font-size: 18px;">${inversion.fechaInicio}</div>
+                        <div class="info-grid">
+                            <div class="info-box">
+                                <div class="label">FECHA DE INICIO</div>
+                                <div class="value">${inversion.fechaInicio}</div>
                             </div>
-                            <div>
-                                <div style="color: #a0a0ff;">FECHA FINAL</div>
-                                <div style="color: #ffd700; font-size: 18px;">${inversion.fechaFinal}</div>
+                            <div class="info-box">
+                                <div class="label">FECHA FINAL</div>
+                                <div class="value">${inversion.fechaFinal}</div>
+                            </div>
+                            <div class="info-box">
+                                <div class="label">BENEFICIO TOTAL</div>
+                                <div class="value" style="color: #00ff9d;">+$${beneficioTotal.toFixed(2)}</div>
+                            </div>
+                            <div class="info-box">
+                                <div class="label">ROI</div>
+                                <div class="value">${roi}%</div>
                             </div>
                         </div>
+                        
+                        <h3 style="color: #ffd700; text-align: center; margin: 30px 0;">📊 DETALLE COMPLETO DE RENDIMIENTOS (20 DÍAS)</h3>
+                        
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>DÍA</th>
+                                        <th>FECHA COMPLETA</th>
+                                        <th>DÍA SEMANA</th>
+                                        <th>CAPITAL INICIAL</th>
+                                        <th>RENDIMIENTO</th>
+                                        <th>CAPITAL FINAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filasTabla}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="total-box">
+                            <h3 style="color: #ffd700; font-size: 24px; margin-bottom: 20px;">💰 RESUMEN FINAL 💰</h3>
+                            <div class="amount">$${inversion.resultados[inversion.resultados.length-1].capitalFinal.toFixed(2)}</div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px 0;">
+                                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;">
+                                    <div style="color: #a0a0ff;">Inversión Inicial</div>
+                                    <div style="color: #ffd700; font-size: 20px;">$${inversion.inversion.toFixed(2)}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;">
+                                    <div style="color: #a0a0ff;">Beneficio Total</div>
+                                    <div style="color: #00ff9d; font-size: 20px;">+$${beneficioTotal.toFixed(2)}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px;">
+                                    <div style="color: #a0a0ff;">ROI</div>
+                                    <div style="color: #ffd700; font-size: 20px;">${roi}%</div>
+                                </div>
+                            </div>
+                            
+                            <p style="color: #a0a0ff;">Período: ${inversion.fechaInicio} al ${inversion.fechaFinal}</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>⚡ HEYDIN KAYSER INVEST - Sistema Cuántico de Gestión ⚡</p>
+                            <p>Documento generado el ${new Date().toLocaleString()}</p>
+                        </div>
                     </div>
-                    
-                    <!-- FOOTER -->
-                    <div style="text-align: center; margin-top: 30px; color: #a0a0ff; font-size: 12px; border-top: 1px solid rgba(255,215,0,0.3); padding-top: 20px;">
-                        <p>⚡ HEYDIN KAYSER INVEST - Sistema Cuántico de Gestión ⚡</p>
-                        <p>Documento generado el ${new Date().toLocaleString()}</p>
-                        <p>Período de inversión: ${inversion.fechaInicio} al ${inversion.fechaFinal} (20 días hábiles)</p>
-                    </div>
-                </div>
+                </body>
+                </html>
             `;
             
-            return element;
+            return htmlCompleto;
         }
         
-        // Función para descargar HTML (CORREGIDA)
+        // Función para descargar HTML (con colores amarillos)
         function descargarHTML() {
             const nombre = document.getElementById('nombre').value;
             const apellido = document.getElementById('apellido').value;
@@ -1214,8 +1342,6 @@
             }
             
             const resultados = calcularRendimientos(inversion, porcentaje, fechaInicio);
-            
-            // Calcular fecha final
             const fechaFinal = new Date(resultados[resultados.length-1].fechaObj);
             
             const inversionTemp = {
@@ -1229,8 +1355,7 @@
                 fechaRegistro: new Date().toLocaleString()
             };
             
-            const element = generarReporteCompleto(inversionTemp);
-            const htmlContent = element.outerHTML;
+            const htmlContent = generarReportePDFCompleto(inversionTemp);
             
             const blob = new Blob([htmlContent], { type: 'text/html' });
             const url = window.URL.createObjectURL(blob);
@@ -1240,7 +1365,7 @@
             a.click();
         }
         
-        // Función para descargar PDF (CORREGIDA)
+        // Función para descargar PDF (con colores amarillos)
         function descargarPDF() {
             const nombre = document.getElementById('nombre').value;
             const apellido = document.getElementById('apellido').value;
@@ -1254,8 +1379,6 @@
             }
             
             const resultados = calcularRendimientos(inversion, porcentaje, fechaInicio);
-            
-            // Calcular fecha final
             const fechaFinal = new Date(resultados[resultados.length-1].fechaObj);
             
             const inversionTemp = {
@@ -1269,7 +1392,11 @@
                 fechaRegistro: new Date().toLocaleString()
             };
             
-            const element = generarReporteCompleto(inversionTemp);
+            const htmlContent = generarReportePDFCompleto(inversionTemp);
+            
+            // Crear elemento temporal para convertir a PDF
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
             document.body.appendChild(element);
             
             const opt = {
@@ -1294,13 +1421,12 @@
             });
         }
         
-        // Función para descargar reporte HTML guardado (CORREGIDA)
+        // Función para descargar reporte HTML guardado
         function descargarReporteHTML(index) {
             const inversion = inversionesGuardadas[index];
             if (!inversion) return;
             
-            const element = generarReporteCompleto(inversion);
-            const htmlContent = element.outerHTML;
+            const htmlContent = generarReportePDFCompleto(inversion);
             
             const blob = new Blob([htmlContent], { type: 'text/html' });
             const url = window.URL.createObjectURL(blob);
@@ -1310,12 +1436,15 @@
             a.click();
         }
         
-        // Función para descargar reporte PDF guardado (CORREGIDA)
+        // Función para descargar reporte PDF guardado
         function descargarReportePDF(index) {
             const inversion = inversionesGuardadas[index];
             if (!inversion) return;
             
-            const element = generarReporteCompleto(inversion);
+            const htmlContent = generarReportePDFCompleto(inversion);
+            
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
             document.body.appendChild(element);
             
             const opt = {
@@ -1338,27 +1467,11 @@
                 inversionesGuardadas = JSON.parse(saved);
             }
             
-            // Establecer fecha actual por defecto
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('fechaInicio').value = today;
             
-            // Ajustar viewport para dispositivos móviles
-            const viewport = document.querySelector('meta[name=viewport]');
-            if (viewport) {
-                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes');
-            }
-            
-            console.log("Sistema iniciado correctamente");
-        }
-        
-        // Manejar cambios de orientación en móviles
-        window.addEventListener('resize', function() {
-            document.querySelectorAll('.table-responsive').forEach(table => {
-                if (table.scrollWidth > table.clientWidth) {
-                    table.style.overflowX = 'auto';
-                }
-            });
-        });
+            console.log("Sistema HEYDIN KAYSER INVEST iniciado correctamente");
+        };
     </script>
 </body>
 </html>
